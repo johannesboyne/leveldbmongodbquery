@@ -1,0 +1,27 @@
+{
+  "name": "leveldbmongodbquery",
+  "version": "0.0.1",
+  "description": "A simple leveldb mongodb wrapper",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "leveldb",
+    "level-up",
+    "mongo",
+    "mongodb",
+    "wrapper",
+    "query"
+  ],
+  "author": "Johannes Boyne <johannes@boyne.de>",
+  "license": "MIT",
+  "dependencies": {
+    "tap": "~0.4.8",
+    "js-array-iterator": "~0.1.0",
+    "highland": "~1.19.1",
+    "memdown": "~0.7.0",
+    "level-sublevel": "~5.2.0",
+    "levelup": "~0.18.2"
+  }
+}
