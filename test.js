@@ -28,6 +28,11 @@ db.collection('test').insert({test: 1}, function (err, document) {
         assert.equal(doc.test, 2)
         assert.equal(doc.properObject.inside, true)
       })
+
+      // find and get back a cursor, it even supports toArray!
+      db.collection('test').find().toArray(function (err, array) {
+        assert.equal(array instanceof Array, true)
+      })
     })
   })
 })
