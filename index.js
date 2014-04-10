@@ -1,6 +1,6 @@
 var levelup = require('levelup')
 var Sublevel = require('level-sublevel')
-var db = Sublevel(levelup('/does/not/matter', { db: require('memdown') }))
+var db;
 var _ = require('highland')
 var Iterator = require('js-array-iterator')
 
@@ -37,12 +37,12 @@ Cursor.prototype.toArray = function (fn) {
   }
 }
 Cursor.prototype.sort = function (sortingObj) {
- this.sortingObj = sortingObj; 
- return this 
+  this.sortingObj = sortingObj; 
+  return this 
 }
 
 function Collection (id) {
-  this.collection = db.sublevel(id)
+  this.collection = this._c = db.sublevel(id)
 }
 Collection.prototype.count = function (fn) {
   _(this.collection.createKeyStream()).toArray(function (arr) {
@@ -52,43 +52,87 @@ Collection.prototype.count = function (fn) {
 Collection.prototype.find = function () {
   return new Cursor(_(this.collection.createReadStream({valueEncoding : 'json'})))
 }
-Collection.prototype.save = function (document, fn) {
-  var _id = _genUID()
-  this.collection.put(_id, document, {valueEncoding : 'json'}, function (err) {
-    fn(err, _.extend({"_id": _id}, document))
+Collection.prototype.findOne = function (query, fn) {
+  if (query.hasOwnProperty('_id'))
+    return this.collection.get(query._id, function (err, doc) { fn(err, JSON.parse(doc)) })
+
+  var _stream = this.collection.createReadStream()
+  _stream.on('data', function (kv) {
+    if (kv.value.replace(/{|}/gi, '').match(JSON.stringify(query).replace(/{|}/gi, ''))) {
+      if (fn)
+        fn(null, JSON.parse(kv.value))
+      fn = null
+    }
+  }).on('close', function () {
+    if (fn)
+      fn(null, null)
   })
 }
-Collection.prototype.update = function (query, update, fn) {
+Collection.prototype.save = function (document, fn) {
+  var _id = document._id ? document._id : _genUID()
+  _.extend({"_id": _id}, document)
+
+  this.collection.put(_id, document, {valueEncoding : 'json'}, function (err) {
+    if (typeof fn === 'function') fn(err, document)
+  })
+}
+Collection.prototype.insert = function (document, fn) {
+  if (document.hasOwnProperty('_id'))
+    document._id = null
+  this.save(document, fn)
+}
+Collection.prototype.remove = function (query, fn) {
   var that = this
-  var keys = Object.keys(query)
-  var it = new Iterator(keys)
-  it.on('next', function (el) {
-    that.collection.get(query[el], {valueEncoding: 'json'}, function (err, doc) {
-      keys.slice(1).forEach(function (k) {
-        if (k.match(/\./)) {
-          var ks = k.split('.')
-          var lastref;
-          doc[ks[0]].forEach(function (item) {
-            if (eval("item."+k.split('.').splice(1).join('.')) == query[k]) {
-              if (update.hasOwnProperty("$set")) {
-                var upd = Object.keys(update.$set)[0] 
-                eval("item"+upd.substring(upd.match(/\$\./).index+1) + "= "+update.$set[upd]) 
-                fn(null, doc)
-              }
-            }
-          })
-        }
-      })
+  if (typeof query === 'function') {
+    fn = query
+    _(this.collection.createKeyStream()).toArray(function (arr) {
+      that.collection.batch(arr.map(function (a) { return { type: 'del', key: a } }))
+      fn(null)
     })
-  }).on('end', function () {
-  }).next()
+  }
 }
 
-function DB () {}
+// I need a better implementation here!
+//Collection.prototype.update = function (query, update, fn) {
+//  var that = this
+//  var keys = Object.keys(query)
+//  var it = new Iterator(keys)
+//  it.on('next', function (el) {
+//    that.collection.get(query[el], {valueEncoding: 'json'}, function (err, doc) {
+//      keys.slice(1).forEach(function (k) {
+//        if (k.match(/\./)) {
+//          var ks = k.split('.')
+//          var lastref;
+//          doc[ks[0]].forEach(function (item) {
+//            if (eval("item."+k.split('.').splice(1).join('.')) == query[k]) {
+//              if (update.hasOwnProperty("$set")) {
+//                var upd = Object.keys(update.$set)[0] 
+//                eval("item"+upd.substring(upd.match(/\$\./).index+1) + "= "+update.$set[upd]) 
+//                fn(null, doc)
+//              }
+//            }
+//          })
+//        }
+//      })
+//    })
+//  }).on('end', function () {
+//  }).next()
+//}
+
+function DB (id) {
+  db = Sublevel(levelup('./'+id))
+}
 DB.prototype.collection = function (id) {
   return new Collection(id)
 }
 
 module.exports.open = function (path) {
-  return new DB()
+  return new DB(path)
 }
+
+function ObjectID (id) { this.uid = id ? id : _genUID() }
+ObjectID.prototype.toString = function () { return this.uid }
+ObjectID.prototype.inspect = ObjectID.prototype.toString
+
+module.exports.ObjectID = ObjectID
+
