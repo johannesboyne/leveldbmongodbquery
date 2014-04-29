@@ -20,7 +20,6 @@
     "tap": "~0.4.8",
     "js-array-iterator": "~0.1.0",
     "highland": "~1.19.1",
-    "memdown": "~0.7.0",
     "level-sublevel": "~5.2.0",
     "levelup": "~0.18.2",
     "leveldown": "~0.10.2"
