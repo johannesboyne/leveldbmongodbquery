@@ -92,33 +92,6 @@ Collection.prototype.remove = function (query, fn) {
   }
 }
 
-// I need a better implementation here!
-//Collection.prototype.update = function (query, update, fn) {
-//  var that = this
-//  var keys = Object.keys(query)
-//  var it = new Iterator(keys)
-//  it.on('next', function (el) {
-//    that.collection.get(query[el], {valueEncoding: 'json'}, function (err, doc) {
-//      keys.slice(1).forEach(function (k) {
-//        if (k.match(/\./)) {
-//          var ks = k.split('.')
-//          var lastref;
-//          doc[ks[0]].forEach(function (item) {
-//            if (eval("item."+k.split('.').splice(1).join('.')) == query[k]) {
-//              if (update.hasOwnProperty("$set")) {
-//                var upd = Object.keys(update.$set)[0] 
-//                eval("item"+upd.substring(upd.match(/\$\./).index+1) + "= "+update.$set[upd]) 
-//                fn(null, doc)
-//              }
-//            }
-//          })
-//        }
-//      })
-//    })
-//  }).on('end', function () {
-//  }).next()
-//}
-
 function DB (id) {
   db = Sublevel(levelup('./'+id))
 }
