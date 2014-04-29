@@ -1,8 +1,7 @@
-var levelup = require('levelup')
-var Sublevel = require('level-sublevel')
-var db;
-var _ = require('highland')
-var Iterator = require('js-array-iterator')
+var levelup = require('levelup'),
+Sublevel = require('level-sublevel'),
+db,
+_ = require('highland');
 
 function _genUID () {
   var _rnds = new Array(16)
